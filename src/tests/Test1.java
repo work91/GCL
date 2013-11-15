@@ -17,7 +17,7 @@ public class Test1 {
 		
 		TokenStream tokenStream=new CommonTokenStream(lexer);
 		gclParser parser=new gclParser(tokenStream);
-		parser.rule();
+		parser.program();
 		System.out.println("Done!");
 	}
 

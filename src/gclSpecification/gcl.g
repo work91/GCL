@@ -3,7 +3,6 @@ grammar gcl;
 options{
     language = Java;
     output=CommonTree;
-    backtrack=true;
 }
 
 @header{
@@ -34,7 +33,7 @@ definitionPart:
     (definition ';')*;
 
 definition:
-    constantDefinition | variableDefinition | procedureDefinition | typedef | procedureDeclaration;
+    constantDefinition | variableDefinition | (procedureDefinition) | typedef ;//| procedureDeclaration;
 
 constantDefinition:
     'const' constantName '=' constant;
@@ -62,12 +61,13 @@ variableList:
     
 typedef:
     'typedef' type IDENTIFIER;
-    
-procedureDeclaration:
-    'proc' IDENTIFIER parameterPart?;  //TODO change proc to procedure
-  
+
 procedureDefinition:
     procedureDeclaration block;
+    
+procedureDeclaration:
+    'proc' IDENTIFIER parameterPart;  //TODO change proc to procedure
+
     
 parameterPart:
     '(' (parameterDefinition (';' parameterDefinition)*)? ')';
@@ -88,16 +88,17 @@ readStatement:
     'read' variableAccessList;
     
 variableAccessList:
-    'variableAccess' (',' variableAccess)*;
+    variableAccess (',' variableAccess)*;
     
 writeStatement:
     'write' writeItem (',' writeItem);
     
 writeItem:
-    'stringconst' | expression;
+    //(STRINGLITERAL | expression)(','((STRINGLITERAL | expression))*);
+    (STRINGLITERAL | expression);
 
 expressionList:
-    expression (',' expression);
+    expression (',' expression)*;
     
 assignStatement:
     variableAccessList ':=' expressionList;
@@ -140,12 +141,13 @@ relationOperator:
     
 simpleExpression:
     (('+' | '-') term (addingOperator term)*)|(term (addingOperator term)*); //TODO check
+    //(('+' | '-')? term (addingOperator term)*);//|(term (addingOperator term)*); //TODO check
     
 term:
     factor (multiplyOperator factor)*;
     
 factor:
-    variableAccess | INTEGER | booleanConstant | ('['expressionList']')|('['expression']') | ('~' factor);
+    variableAccess | INTEGER | booleanConstant | ('['expressionList']') | ('~' factor);
     
 addingOperator:
     '+' | '-';
@@ -160,7 +162,7 @@ variableAccess:
     IDENTIFIER variableMore;
     
 variableMore:
-    ('['expression']') | indexOrComp | ('.' nextItem indexOrComp) | '';
+    (('['expression']') | indexOrComp | ('.' nextItem indexOrComp));
     
 nextItem:
     INTEGER | IDENTIFIER;
@@ -174,12 +176,23 @@ constant:
 booleanConstant:
     'true' | 'false'; 
 
+fragment LETTER:
+    ('a'..'z')|('A'..'Z');
+    
+fragment DIGIT:
+    '0'..'9';
+    
 IDENTIFIER: 
-  (('a'..'z')('A'..'Z'))(('a'..'z')|('A'..'Z')|'_'|('0'..'9'))*;
+  LETTER+;
 
 INTEGER: 
-  ('1'..'9')('0'..'9')*;
+  DIGIT+;
+
+STRINGLITERAL:
+    '\'' ~('\n'|'\r')* '\'';
 
 WS :
     (' ' | '\t' | '\n' | '\r' | '\f')+ {$channel = HIDDEN;};
     
+LINE_COMMENT:
+    '//' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;};
